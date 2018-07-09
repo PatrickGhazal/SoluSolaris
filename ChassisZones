@@ -1,11 +1,19 @@
+/*
+Author : Patrick Ghazal
+Created : Fri 6 July, 13:30:00
+Last Modified :
+*/
+
 DECLARE @annee string = "2018";
 DECLARE @mois string = "02";
 
 DECLARE @source string = "adl://gcpdatalakestore.azuredatalakestore.net/Solaris/";
-// 1ere etoile : mode, 2eme : jour, 3eme : type de fichier
+// 1ere etoile : mode, 2eme : jour, 3eme : zone (ou sun pour fich sun)
 DECLARE @dir = "{*}/" + @annee + "/" + @mois + "/{*}/{*}/";
 
 DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/SolarisOutput/";
+
+// Extracting original source data
 
 @prstat =
 	EXTRACT
@@ -20,4 +28,43 @@ DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/Solar
 		LoadAvg1	float,
 		LoadAvg5	float,
 		LoadAvg15	float
-	FROM @source + "Prstat/" + @dir; 
+	FROM @source + "Prstat/" + @dir;
+
+@poolstat =
+	EXTRACT
+		Timestamp	string,
+		Id			int,
+		pool		string,
+		size		int,
+		used		float,
+		load		float
+	FROM @source + "Poolstat/" + @dir;
+
+@sun =
+	EXTRACT
+		Host			string,
+		NomFrame 		string,
+		Type			string,
+		SerNum			string,
+		TotChips		int,
+		TotCores		int,
+		TotThreads		int,
+		TotMem			int,
+		Zone			string,
+		CapMem			int,
+		PoolCpu			string,
+		ZoneCpuCap		int,
+		ZoneCpuShare	int,
+		ZoneMaxSwap		int,
+		ZoneMaxLkdMem	int,
+		ZoneMaxShmMem	int,
+		ZoneMaxLwps		int
+	FROM @source + "Sun/" + @dir;
+
+@poolandpr =
+	SELECT
+		pr.*,
+		pool.*
+	FROM @prstat AS pr
+	FULL OUTER JOIN
+	@poolstat AS pool ON (pr.Timestamp == pool.Timestamp);
