@@ -1,0 +1,23 @@
+DECLARE @annee string = "2018";
+DECLARE @mois string = "02";
+
+DECLARE @source string = "adl://gcpdatalakestore.azuredatalakestore.net/Solaris/";
+// 1ere etoile : mode, 2eme : jour, 3eme : type de fichier
+DECLARE @dir = "{*}/" + @annee + "/" + @mois + "/{*}/{*}/";
+
+DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/SolarisOutput/";
+
+@prstat =
+	EXTRACT
+		Timestamp	string,
+		Nproc		int,
+		Swap		string,
+		Rss 		string,
+		Memory		string,
+		Cpu			string,
+		Zone		string,
+		Lwps		int,
+		LoadAvg1	float,
+		LoadAvg5	float,
+		LoadAvg15	float
+	FROM @source + "Prstat/" + @dir; 
