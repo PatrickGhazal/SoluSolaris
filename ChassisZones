@@ -66,18 +66,14 @@ DECLARE @dir string = "{*}";
     USING Extractors.Text(skipFirstNRows:1, delimiter:',');
     //USING Extractors.Text(skipFirstNRows:1, delimiter:';');
 
-@poolandpr =
-	SELECT
-		pr.*,
-		pool.*
-	FROM @prstat AS pr
-	FULL OUTER JOIN
-	@poolstat AS pool ON (pr.TimestampPr == pool.TimestampPo);
-
-OUTPUT @poolandpr
-TO "SolarisOutput/poolandpr.csv"
+OUTPUT @poolstat
+TO "SolarisOutput/poolstat.csv"
 USING Outputters.Csv();
 
 OUTPUT @sun
-TO "SolarisOutput/useless_sun.csv"
+TO "SolarisOutput/sun.csv"
+USING Outputters.Csv();
+
+OUTPUT @prstat
+TO "SolarisOutput/prstat.csv"
 USING Outputters.Csv();
