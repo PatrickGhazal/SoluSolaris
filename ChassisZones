@@ -65,17 +65,16 @@ DECLARE @dir string = "{*}";
     FROM @source + "Sun/" + @dir
     USING Extractors.Text(skipFirstNRows:1, delimiter:',');
     //USING Extractors.Text(skipFirstNRows:1, delimiter:';');
+    
+// File-level hour averaging
 
 @prstat =
 	SELECT
-		TimestampPr.Substring(0, 10) AS Date,
-		TimestampPr.Substring(11, 2).TrimEnd(':') AS Heure,
-		TimestampPr,
-		Nproc,
+		TimestampPr.Substring(0, 10) AS DatePr,
+		TimestampPr.Substring(11, 2).TrimEnd(':') AS HeurePr,
 		Convert.ToInt32(Swap.TrimEnd('M')) AS SwapInt,
-		Convert.ToInt32(Rss.TrimEnd('M')) AS RssInt,
-		Convert.ToFloat(Memory.TrimEnd('%')) AS MemoryFloat,
-		Convert.ToFloat(Cpu.TrimEnd('%')) AS CpuFloat,
+		Convert.ToDouble(Memory.TrimEnd('%')) AS MemoryDouble,
+		Convert.ToDouble(Cpu.TrimEnd('%')) AS CpuDouble,
 		PrZone,
 		Lwps,
 		LoadAvg1,
@@ -85,15 +84,44 @@ DECLARE @dir string = "{*}";
 
 @poolstat =
 	SELECT
-		TimestampPo.Substring(0, 10) AS Date,
-		TimestampPo.Substring(11, 2).TrimEnd(':') AS Heure,
-		TimestampPo,
+		TimestampPo.Substring(0, 10) AS DatePo,
+		TimestampPo.Substring(11, 2).TrimEnd(':') AS HeurePo,
 		Id,
 		Pool,
 		Size,
-		Used,
-		Load
+		Used
 	FROM @poolstat;
+
+@prstat =
+	SELECT
+		DatePr,
+		HeurePr,
+		AVG(SwapInt) AS SwapIntAvg,
+		MAX(SwapInt) AS SwapIntMax,
+		AVG(MemoryDouble) AS MemoryDoubleAvg,
+		MAX(MemoryDouble) AS MemoryDoubleMax,
+		AVG(CpuDouble) AS CpuDoubleAvg,
+		MAX(CpuDouble) AS CpuDoubleMax,
+		PrZone,
+		AVG(Lwps) AS LwpsAvg,
+		MAX(Lwps) AS LwpsMax,
+		AVG(LoadAvg1) AS LoadAvg1Avg,
+		AVG(LoadAvg5) AS LoadAvg5Avg,
+		AVG(LoadAvg15) AS LoadAvg15Avg
+	FROM @prstat
+	GROUP BY DatePr, HeurePr, PrZone;
+
+@poolstat =
+	SELECT
+		DatePo,
+		HeurePo,
+		Id,
+		Pool,
+		Size,
+		AVG(Used) AS UsedAvg,
+		MAX(Used) AS UsedMax
+	FROM @poolstat
+	GROUP BY DatePo, HeurePo, Id, Pool, Size;
 
 OUTPUT @poolstat
 TO "SolarisOutput/poolstat.csv"
