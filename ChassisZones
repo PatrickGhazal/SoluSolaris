@@ -1,6 +1,6 @@
 /*
 Author : Patrick Ghazal
-Created : Fri 6 July, 13:30:00
+Created : Fri 6 July, 12:52:35 PM
 Last Modified :
 */
 
@@ -73,7 +73,7 @@ DECLARE @dir string = "{*}";
 		TimestampPr.Substring(0, 10) AS DatePr,
 		TimestampPr.Substring(11, 2).TrimEnd(':') AS HeurePr,
 		Convert.ToInt32(Swap.TrimEnd('M')) AS SwapInt,
-		Convert.ToDouble(Memory.TrimEnd('%')) AS MemoryDouble,
+		(Convert.ToDouble(Memory.TrimEnd('%'))) AS MemoryDouble,
 		Convert.ToDouble(Cpu.TrimEnd('%')) AS CpuDouble,
 		PrZone,
 		Lwps,
@@ -123,12 +123,13 @@ DECLARE @dir string = "{*}";
 	FROM @poolstat
 	GROUP BY DatePo, HeurePo, Id, Pool, Size;
 
-OUTPUT @poolstat
-TO "SolarisOutput/poolstat.csv"
-USING Outputters.Csv();
 
 OUTPUT @sun
 TO "SolarisOutput/sun.csv"
+USING Outputters.Csv();
+
+OUTPUT @poolstat
+TO "SolarisOutput/poolstat.csv"
 USING Outputters.Csv();
 
 OUTPUT @prstat
