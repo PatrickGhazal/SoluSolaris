@@ -7,59 +7,64 @@ Last Modified :
 DECLARE @annee string = "2018";
 DECLARE @mois string = "02";
 
-DECLARE @source string = "adl://gcpdatalakestore.azuredatalakestore.net/Solaris/";
-// 1ere etoile : mode, 2eme : jour, 3eme : zone (ou sun pour fich sun)
-DECLARE @dir = "{*}/" + @annee + "/" + @mois + "/{*}/{*}/";
+//DECLARE @source string = "adl://gcpdatalakestore.azuredatalakestore.net/Solaris/";
+DECLARE @source string = "SolarisInput/";
+// 1ere etoile : mode, 2eme : jour, 3eme : zone (ou "sun" pour fich sun)
+//DECLARE @dir string = "{*}/" + @annee + "/" + @mois + "/{*}/{*}/";
+DECLARE @dir string = "{*}";
 
-DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/SolarisOutput/";
+//DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/SolarisOutput/";
 
 // Extracting original source data
 
 @prstat =
 	EXTRACT
-		Timestamp	string,
+		TimestampPr	string,
 		Nproc		int,
 		Swap		string,
 		Rss 		string,
 		Memory		string,
 		Cpu			string,
-		Zone		string,
+		PrZone		string,
 		Lwps		int,
 		LoadAvg1	float,
 		LoadAvg5	float,
 		LoadAvg15	float
-	FROM @source + "Prstat/" + @dir;
+	FROM @source + "Prstat/" + @dir
+    USING Extractors.Text(skipFirstNRows:1, delimiter:';');
 
 @poolstat =
 	EXTRACT
-		Timestamp	string,
+		TimestampPo	string,
 		Id			int,
 		pool		string,
 		size		int,
 		used		float,
 		load		float
-	FROM @source + "Poolstat/" + @dir;
+	FROM @source + "Poolstat/" + @dir
+    USING Extractors.Text(skipFirstNRows:1, delimiter:';');
 
 @sun =
-	EXTRACT
-		Host			string,
-		NomFrame 		string,
-		Type			string,
-		SerNum			string,
-		TotChips		int,
-		TotCores		int,
-		TotThreads		int,
-		TotMem			int,
-		Zone			string,
-		CapMem			int,
-		PoolCpu			string,
-		ZoneCpuCap		int,
-		ZoneCpuShare	int,
-		ZoneMaxSwap		int,
-		ZoneMaxLkdMem	int,
-		ZoneMaxShmMem	int,
-		ZoneMaxLwps		int
-	FROM @source + "Sun/" + @dir;
+    EXTRACT Host string,
+            NomFrame string,
+            SType string,
+            SerNum string,
+            TotChips int,
+            TotCores int,
+            TotThreads int,
+            TotMem int,
+            SZone string,
+            CapMem int,
+            PoolCpu string,
+            ZoneCpuCap int,
+            ZoneCpuShare int,
+            ZoneMaxSwap float,
+            ZoneMaxLkdMem int,
+            ZoneMaxShmMem int,
+            ZoneMaxLwps int
+    FROM @source + "Sun/" + @dir
+    USING Extractors.Text(skipFirstNRows:1, delimiter:',');
+    //USING Extractors.Text(skipFirstNRows:1, delimiter:';');
 
 @poolandpr =
 	SELECT
@@ -67,4 +72,12 @@ DECLARE @outputdir string = "adl://gcpdatalakestore.azuredatalakestore.net/Solar
 		pool.*
 	FROM @prstat AS pr
 	FULL OUTER JOIN
-	@poolstat AS pool ON (pr.Timestamp == pool.Timestamp);
+	@poolstat AS pool ON (pr.TimestampPr == pool.TimestampPo);
+
+OUTPUT @poolandpr
+TO "SolarisOutput/poolandpr.csv"
+USING Outputters.Csv();
+
+OUTPUT @sun
+TO "SolarisOutput/useless_sun.csv"
+USING Outputters.Csv();
