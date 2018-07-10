@@ -37,10 +37,10 @@ DECLARE @dir string = "{*}";
 	EXTRACT
 		TimestampPo	string,
 		Id			int,
-		pool		string,
-		size		int,
-		used		float,
-		load		float
+		Pool		string,
+		Size		int,
+		Used		float,
+		Load		float
 	FROM @source + "Poolstat/" + @dir
     USING Extractors.Text(skipFirstNRows:1, delimiter:';');
 
@@ -65,6 +65,35 @@ DECLARE @dir string = "{*}";
     FROM @source + "Sun/" + @dir
     USING Extractors.Text(skipFirstNRows:1, delimiter:',');
     //USING Extractors.Text(skipFirstNRows:1, delimiter:';');
+
+@prstat =
+	SELECT
+		TimestampPr.Substring(0, 10) AS Date,
+		TimestampPr.Substring(11, 2).TrimEnd(':') AS Heure,
+		TimestampPr,
+		Nproc,
+		Convert.ToInt32(Swap.TrimEnd('M')) AS SwapInt,
+		Convert.ToInt32(Rss.TrimEnd('M')) AS RssInt,
+		Convert.ToFloat(Memory.TrimEnd('%')) AS MemoryFloat,
+		Convert.ToFloat(Cpu.TrimEnd('%')) AS CpuFloat,
+		PrZone,
+		Lwps,
+		LoadAvg1,
+		LoadAvg5,
+		LoadAvg15
+	FROM @prstat;
+
+@poolstat =
+	SELECT
+		TimestampPo.Substring(0, 10) AS Date,
+		TimestampPo.Substring(11, 2).TrimEnd(':') AS Heure,
+		TimestampPo,
+		Id,
+		Pool,
+		Size,
+		Used,
+		Load
+	FROM @poolstat;
 
 OUTPUT @poolstat
 TO "SolarisOutput/poolstat.csv"
